@@ -1,1 +1,1 @@
-# Interactive-Black-Scholes-Pricing-Model
+# Interactive Black-Scholes Pricing Model
