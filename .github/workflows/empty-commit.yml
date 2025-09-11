@@ -1,0 +1,24 @@
+name: Keep Repo Active with Empty Commits
+
+on:
+  schedule:
+    # 3 times daily at 6 AM, 2 PM, and 10 PM UTC
+    - cron: "0 6,14,22 * * *"
+  workflow_dispatch:   # lets you run it manually too
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Push empty commit
+        run: |
+          git commit --allow-empty -m "chore: keep alive"
+          git push
