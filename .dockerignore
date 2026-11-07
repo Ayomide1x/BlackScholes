@@ -1,7 +1,4 @@
 **/node_modules
 web/dist
 .git
-.github
-.devcontainer
-.streamlit
-*.py
+.claude

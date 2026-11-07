@@ -17,7 +17,6 @@ Everything recalculates in the browser as you type or drag, so there is no serve
 
 - `web/`: the app (React, TypeScript and Vite). The model is `web/src/blackScholes.ts`, tested against Python reference values in `web/src/blackScholes.test.ts`.
 - `Dockerfile`, `docker-compose.yml` and `deploy/`: the production container and the shared Caddy site block. See [DEPLOY.md](DEPLOY.md).
-- `BlackScholes.py`, `streamlit_app.py`: the original Streamlit version.
 
 ## Running locally
 
