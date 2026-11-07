@@ -1,0 +1,19 @@
+# Inside the container: serve the built site. HTTPS is the VM's shared Caddy's job.
+{
+	auto_https off
+	admin off
+}
+
+:8080 {
+	root * /srv
+	encode zstd gzip
+	# Vite fingerprints everything under /assets, so it can be cached forever.
+	header /assets/* Cache-Control "public, max-age=31536000, immutable"
+	header ?Cache-Control "no-cache"
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+	}
+	file_server
+}

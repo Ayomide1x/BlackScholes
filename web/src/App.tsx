@@ -1,0 +1,220 @@
+import { useMemo, useState } from "react";
+import { MODELS, greeksOf, linspace, priceGrid, validate, type Market, type Model, type Params } from "./models";
+import { NumberField } from "./NumberField";
+import { Formula } from "./Formula";
+import { GreeksTable } from "./GreeksTable";
+import { Heatmap } from "./Heatmap";
+import { PriceCurve } from "./PriceCurve";
+
+const LINKEDIN = "https://www.linkedin.com/in/ayomide-ogunbowale-91a6341ba/";
+const GITHUB = "https://github.com/Ayomide1x/BlackScholes";
+
+// Inputs as typed: the rate and percentage parameters are in display units.
+interface Form {
+  spot: number;
+  strike: number;
+  time: number;
+  ratePct: number;
+}
+
+interface Range {
+  spotMin: number;
+  spotMax: number;
+  volMin: number; // the model's volatility input, display units
+  volMax: number;
+}
+
+const START: Form = { spot: 100, strike: 100, time: 1, ratePct: 5 };
+
+const defaults = (model: Model): Params => Object.fromEntries(model.params.map((p) => [p.key, p.default]));
+
+// Same defaults as the original app: spot ±20%, volatility ×0.5 to ×1.5.
+const rangeAround = (f: Form, vol: number): Range => ({
+  spotMin: +(f.spot * 0.8).toFixed(2),
+  spotMax: +(f.spot * 1.2).toFixed(2),
+  volMin: +(vol * 0.5).toFixed(1),
+  volMax: +(vol * 1.5).toFixed(1),
+});
+
+function rangeError(r: Range, volLabel: string): string | null {
+  if (![r.spotMin, r.spotMax, r.volMin, r.volMax].every(Number.isFinite))
+    return "Fill in every heatmap bound with a number.";
+  if (r.spotMin <= 0 || r.volMin <= 0) return "Heatmap minimums must be above zero.";
+  if (r.spotMin >= r.spotMax) return "Set the heatmap's minimum spot below its maximum.";
+  if (r.volMin >= r.volMax) return `Set the heatmap's minimum ${volLabel} below its maximum.`;
+  return null;
+}
+
+export function App() {
+  const model = MODELS[0];
+  const volSpec = model.params.find((p) => p.key === model.volParam)!;
+
+  const [form, setForm] = useState<Form>(START);
+  const [shown, setShown] = useState<Params>(() => defaults(model)); // display units
+  // The heatmap range follows the inputs until someone edits it.
+  const [customRange, setCustomRange] = useState<Range | null>(null);
+  const [cells, setCells] = useState(10);
+
+  const market: Market = useMemo(
+    () => ({ spot: form.spot, strike: form.strike, time: form.time, rate: form.ratePct / 100 }),
+    [form],
+  );
+  const params: Params = useMemo(
+    () => Object.fromEntries(model.params.map((p) => [p.key, shown[p.key] * p.scale])),
+    [model, shown],
+  );
+  const error = validate(model, market, params);
+  const prices = error ? null : model.price(market, params);
+  const greeks = useMemo(() => (error ? null : greeksOf(model, market, params)), [error, model, market, params]);
+
+  const range = customRange ?? rangeAround(form, shown[model.volParam]);
+  const rError = rangeError(range, volSpec.label.toLowerCase());
+  const set = (k: keyof Form) => (v: number) => setForm((f) => ({ ...f, [k]: v }));
+  const setParam = (k: string) => (v: number) => setShown((p) => ({ ...p, [k]: v }));
+  const setRange = (k: keyof Range) => (v: number) => setCustomRange({ ...range, [k]: v });
+
+  const heat = useMemo(() => {
+    if (error || rError) return null;
+    const spots = linspace(range.spotMin, range.spotMax, cells);
+    const vols = linspace(range.volMin, range.volMax, cells);
+    const grid = priceGrid(model, market, params, spots, vols.map((v) => v * volSpec.scale));
+    return { spots, vols, ...grid };
+    // The grid ignores spot and volatility themselves, so dragging those doesn't reprice it.
+  }, [error, rError, range.spotMin, range.spotMax, range.volMin, range.volMax, cells, model, volSpec,
+      market.strike, market.time, market.rate, otherParamsKey(params, model.volParam)]);
+
+  return (
+    <>
+      <header className="site">
+        <h1>Black–Scholes option pricer</h1>
+        <p>
+          Made by <a href={LINKEDIN}>Ayomide Ogunbowale</a>. <a href={GITHUB}>Read the source on GitHub</a>.
+        </p>
+      </header>
+
+      <main>
+        <section className="top">
+          <form className="inputs" onSubmit={(e) => e.preventDefault()} aria-label="Model inputs">
+            <NumberField symbol={<i>S</i>} label="Spot price" value={form.spot} onChange={set("spot")} min={1} max={500} step={0.5} />
+            <NumberField symbol={<i>K</i>} label="Strike price" value={form.strike} onChange={set("strike")} min={1} max={500} step={0.5} />
+            <NumberField symbol={<i>T</i>} label="Time to maturity" value={form.time} onChange={set("time")} min={0.01} max={5} step={0.01} suffix="years" />
+            {model.params.map((p) => (
+              <NumberField
+                key={p.key}
+                symbol={<i>{p.symbol}</i>}
+                label={p.label}
+                value={shown[p.key]}
+                onChange={setParam(p.key)}
+                min={p.min}
+                max={p.max}
+                step={p.step}
+                suffix={p.suffix}
+              />
+            ))}
+            <NumberField symbol={<i>r</i>} label="Risk-free rate" value={form.ratePct} onChange={set("ratePct")} min={-2} max={15} step={0.05} suffix="%" />
+            <button type="button" className="quiet" onClick={() => { setForm(START); setShown(defaults(model)); setCustomRange(null); }}>
+              Reset inputs
+            </button>
+          </form>
+
+          <div className="results">
+            {prices ? (
+              <Formula market={market} vol={params.vol} prices={prices} />
+            ) : (
+              <p className="error" role="alert">{error}</p>
+            )}
+          </div>
+        </section>
+
+        {prices && greeks && (
+          <>
+            <section aria-labelledby="greeks-h">
+              <h2 id="greeks-h">Sensitivities</h2>
+              <p className="lede">How each price responds to small changes in one input, with the others held still.</p>
+              <GreeksTable greeks={greeks} vol={volSpec} />
+            </section>
+
+            <section aria-labelledby="heat-h">
+              <h2 id="heat-h">Prices across spot and {volSpec.label.toLowerCase()}</h2>
+              <p className="lede">
+                Each cell reprices the option at one spot price and {volSpec.label.toLowerCase()}, keeping the other
+                inputs fixed. The outlined cell is closest to your inputs.
+              </p>
+              <div className="range">
+                <RangeBox label="Spot from" value={range.spotMin} onChange={setRange("spotMin")} />
+                <RangeBox label="to" value={range.spotMax} onChange={setRange("spotMax")} />
+                <RangeBox label={`${volSpec.label} from`} value={range.volMin} onChange={setRange("volMin")} suffix={volSpec.suffix} />
+                <RangeBox label="to" value={range.volMax} onChange={setRange("volMax")} suffix={volSpec.suffix} />
+                <label className="range-box">
+                  <span>Grid</span>
+                  <select value={cells} onChange={(e) => setCells(Number(e.target.value))}>
+                    {[6, 8, 10, 12].map((n) => (
+                      <option key={n} value={n}>
+                        {n} × {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {customRange && (
+                  <button type="button" className="quiet" onClick={() => setCustomRange(null)}>
+                    Follow inputs again
+                  </button>
+                )}
+              </div>
+              {rError || !heat ? (
+                <p className="error" role="alert">{rError}</p>
+              ) : (
+                <div className="heatmaps">
+                  {(["call", "put"] as const).map((kind) => (
+                    <Heatmap
+                      key={kind}
+                      kind={kind}
+                      grid={heat[kind]}
+                      spots={heat.spots}
+                      vols={heat.vols}
+                      volSpec={volSpec}
+                      current={{ spot: market.spot, vol: shown[model.volParam] }}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section aria-labelledby="curve-h">
+              <h2 id="curve-h">Value across spot prices</h2>
+              <PriceCurve model={model} market={market} params={params} />
+            </section>
+          </>
+        )}
+      </main>
+
+      <footer className="site">
+        <p>
+          {model.assumptions} Everything is calculated in your browser.
+        </p>
+      </footer>
+    </>
+  );
+}
+
+/** A stable key for every parameter except the one the heatmap varies. */
+function otherParamsKey(params: Params, skip: string) {
+  return JSON.stringify(Object.entries(params).filter(([k]) => k !== skip));
+}
+
+function RangeBox(props: { label: string; value: number; onChange: (v: number) => void; suffix?: string }) {
+  return (
+    <label className="range-box">
+      <span>{props.label}</span>
+      <span className="field-box">
+        <input
+          type="number"
+          inputMode="decimal"
+          value={Number.isFinite(props.value) ? props.value : ""}
+          onChange={(e) => props.onChange(e.target.value.trim() === "" ? NaN : Number(e.target.value))}
+        />
+        {props.suffix && <span className="suffix">{props.suffix}</span>}
+      </span>
+    </label>
+  );
+}

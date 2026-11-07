@@ -1,0 +1,614 @@
+:root {
+  --paper: #f3f5f7;
+  --surface: #ffffff;
+  --ink: #14213d;
+  --muted: #5b6577;
+  --rule: #c9d1db;
+  --call: #0f766e;
+  --put: #9d174d;
+  --focus: #2563eb;
+  --sans: "Schibsted Grotesk Variable", system-ui, sans-serif;
+  --math: "STIX Two Text", "Cambria Math", Georgia, serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0f1726;
+    --surface: #16213a;
+    --ink: #e6ebf3;
+    --muted: #97a3b8;
+    --rule: #2c3a57;
+    --call: #2dd4bf;
+    --put: #f472b6;
+    --focus: #93c5fd;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* Aligned figures wherever numbers sit in columns or update live. */
+input,
+.eq,
+.ds,
+.greeks,
+.heatmap,
+.legend {
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+i,
+.sym {
+  font-family: var(--math);
+  font-style: italic;
+}
+
+h1,
+h2 {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin: 0;
+}
+
+h2 {
+  font-size: 1.375rem;
+}
+
+.lede {
+  color: var(--muted);
+  max-width: 62ch;
+  margin: 0.375rem 0 1.25rem;
+}
+
+header.site,
+main,
+footer.site {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-inline: clamp(16px, 4vw, 40px);
+}
+
+header.site {
+  padding-block: 2rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 2rem;
+}
+
+header.site h1 {
+  font-size: 1.5rem;
+}
+
+header.site p {
+  margin: 0;
+  color: var(--muted);
+}
+
+main > section {
+  padding-block: 2.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+main > section.top {
+  border-top: 0;
+  padding-top: 0;
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) 1fr;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  align-items: start;
+}
+
+footer.site {
+  padding-block: 2rem 3rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+footer.site p {
+  max-width: 62ch;
+  margin: 0;
+}
+
+/* Inputs */
+
+.inputs {
+  display: grid;
+  gap: 1.125rem;
+}
+
+.field label,
+.range-box > span:first-child {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+
+.field .sym {
+  font-size: 1.25rem;
+  color: var(--ink);
+  min-width: 1ch;
+}
+
+.field-box {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+
+.field-box:focus-within {
+  border-color: var(--focus);
+}
+
+.field-box input,
+.range-box select {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  font: inherit;
+  font-size: 1.0625rem;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  padding: 0.4rem 0.6rem;
+}
+
+.field-box input:focus-visible {
+  outline: none;
+}
+
+.suffix {
+  padding-right: 0.6rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+input[type="range"] {
+  width: 100%;
+  margin: 0.5rem 0 0;
+  accent-color: var(--ink);
+}
+
+button.quiet {
+  justify-self: start;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+}
+
+button.quiet:hover {
+  border-color: var(--ink);
+}
+
+.error {
+  color: var(--put);
+  font-weight: 550;
+  margin: 0;
+}
+
+/* The formula */
+
+.results {
+  min-width: 0;
+}
+
+.formula {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.formula-side {
+  padding: clamp(1.25rem, 3vw, 2rem);
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.formula-side + .formula-side {
+  border-left: 1px solid var(--rule);
+}
+
+.formula-side.call {
+  box-shadow: inset 0 4px 0 var(--call);
+}
+
+.formula-side.put {
+  box-shadow: inset 0 4px 0 var(--put);
+}
+
+.formula-name {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.call .formula-name,
+.greeks th.call,
+b.call {
+  color: var(--call);
+}
+
+.put .formula-name,
+.greeks th.put,
+b.put {
+  color: var(--put);
+}
+
+.eq {
+  margin: 0.75rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.eq.math {
+  font-family: var(--math);
+  /* One line at any width: the formula scales with its column. */
+  font-size: clamp(0.95rem, 7.6cqi, 1.6rem);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.eq.math i {
+  font-size: 1.05em;
+}
+
+.eq.subst {
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+sub,
+sup {
+  font-size: 0.65em;
+  font-style: normal;
+}
+
+.price {
+  margin: 1.25rem 0 0;
+  font-variant-numeric: proportional-nums;
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.call .price {
+  color: var(--call);
+}
+
+.put .price {
+  color: var(--put);
+}
+
+.ds {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.875rem clamp(1.25rem, 3vw, 2rem);
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2.5rem;
+  font-size: 1.0625rem;
+}
+
+/* Greeks */
+
+.greeks {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.greeks th,
+.greeks td {
+  text-align: left;
+  padding: 0.65rem 1rem 0.65rem 0;
+  border-bottom: 1px solid var(--rule);
+  font-weight: 400;
+}
+
+.greeks thead th {
+  font-size: 0.875rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.greeks tbody th .sym {
+  display: inline-block;
+  width: 1.4em;
+  font-size: 1.15rem;
+}
+
+.greeks .num {
+  text-align: right;
+  font-size: 1.0625rem;
+  padding-right: 2rem;
+  white-space: nowrap;
+}
+
+.greeks .meaning {
+  color: var(--muted);
+}
+
+/* Heatmaps */
+
+.range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: end;
+  margin-bottom: 1.5rem;
+}
+
+.range-box .field-box {
+  width: 8.5rem;
+}
+
+.range-box select {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  width: auto;
+}
+
+.heatmaps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.heatmap {
+  margin: 0;
+  min-width: 0;
+  --hue: var(--call);
+}
+
+.heatmap.put {
+  --hue: var(--put);
+}
+
+.heatmap figcaption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.625rem;
+}
+
+.heatmap-title {
+  font-weight: 600;
+  color: var(--hue);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.legend-bar {
+  width: 5rem;
+  height: 0.5rem;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    color-mix(in oklch, var(--hue) 6%, var(--surface)),
+    color-mix(in oklch, var(--hue) 90%, var(--surface))
+  );
+}
+
+.heatmap-scroll {
+  overflow-x: auto;
+}
+
+.heatmap table {
+  border-collapse: separate;
+  border-spacing: 2px;
+  width: 100%;
+  min-width: calc(3rem + var(--cols) * 2.9rem);
+  table-layout: fixed;
+}
+
+.heatmap th {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.heatmap tbody th {
+  width: 3rem;
+  text-align: right;
+  padding-right: 0.375rem;
+}
+
+.heatmap tfoot th {
+  padding-top: 0.25rem;
+}
+
+.heatmap td {
+  background: color-mix(in oklch, var(--hue) var(--mix), var(--surface));
+  text-align: center;
+  font-size: 0.75rem;
+  padding: 0.6rem 0;
+  border-radius: 2px;
+}
+
+.heatmap td.dark {
+  color: var(--surface);
+}
+
+.heatmap td.mark {
+  outline: 2px solid var(--ink);
+  outline-offset: -1px;
+  font-weight: 700;
+}
+
+.axes {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+/* Price curve */
+
+.curve {
+  margin: 1rem 0 0;
+}
+
+.curve svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+}
+
+.curve .grid line {
+  stroke: var(--rule);
+}
+
+.curve text {
+  fill: var(--muted);
+  font-size: 12px;
+  font-family: var(--sans);
+}
+
+.curve .strike {
+  stroke: var(--muted);
+  stroke-dasharray: 2 4;
+}
+
+.curve .strike-label {
+  font-family: var(--math);
+  font-style: italic;
+  font-size: 15px;
+}
+
+.curve path {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.curve path.payoff {
+  stroke-width: 1.5;
+  stroke-dasharray: 5 5;
+  opacity: 0.7;
+}
+
+.curve path.call,
+.curve circle.call {
+  stroke: var(--call);
+}
+
+.curve path.put,
+.curve circle.put {
+  stroke: var(--put);
+}
+
+.curve circle {
+  fill: var(--surface);
+  stroke-width: 2.5;
+}
+
+.curve .now circle.call {
+  fill: var(--call);
+}
+
+.curve .now circle.put {
+  fill: var(--put);
+}
+
+.curve .hover line {
+  stroke: var(--ink);
+  stroke-opacity: 0.35;
+}
+
+.curve figcaption {
+  margin-top: 0.75rem;
+  color: var(--muted);
+  min-height: 3em;
+}
+
+.curve figcaption b {
+  color: var(--ink);
+}
+
+/* Narrow screens */
+
+@media (max-width: 1100px) {
+  .heatmaps {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  main > section.top {
+    grid-template-columns: 1fr;
+  }
+
+  .inputs {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .formula {
+    grid-template-columns: 1fr;
+  }
+
+  .formula-side + .formula-side {
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .greeks .meaning {
+    display: none;
+  }
+
+  .greeks .num {
+    padding-right: 0.5rem;
+  }
+}

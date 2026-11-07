@@ -1,26 +1,28 @@
-# Interactive Black-Scholes Pricing Model
-This repository provides an interactive Black-Scholes Pricing Model dashboard that helps in visualizing option prices under varying conditions. The dashboard is designed to be user-friendly and interactive, allowing users to explore how changes in spot price, volatility, and other parameters influence the value of options.
+# Black–Scholes option pricer
 
-https://interactiveblackscholes.streamlit.app/
+An interactive Black–Scholes calculator for European call and put options.
 
+https://blackscholes.ayomideo.dev
 
-## 🚀 Features:
-1. Options Pricing Visualization:
+## What it does
 
-    + Displays both Call and Put option prices using an interactive heatmap.
-    + The heatmap dynamically updates as you adjust parameters like Spot Price, Volatility, and Time to Maturity.
+- Prices a call and a put from spot, strike, time to maturity, volatility and the risk-free rate. The formula is shown with your numbers substituted in.
+- Shows all five Greeks (delta, gamma, vega, theta, rho) for both options, in trader units: vega and rho per percentage point, theta per day.
+- Draws call and put heatmaps across a range of spot prices and volatilities. The range follows your inputs, or you can set it yourself.
+- Plots option value today against payoff at expiry across spot prices.
 
-2. Interactive Dashboard:
+Everything recalculates in the browser as you type or drag, so there is no server round trip.
 
-    + The dashboard allows real-time updates to the Black-Scholes model parameters.
-    + Users can input different values for the Spot Price, Volatility, Strike Price, Time to Maturity, and Risk-Free Interest Rate to observe how these factors influence option prices.
-    + Both Call and Put option prices are calculated and displayed for immediate comparison.
+## Layout
 
-3. Customizable Parameters:
+- `web/`: the app (React, TypeScript and Vite). The model is `web/src/blackScholes.ts`, tested against Python reference values in `web/src/blackScholes.test.ts`.
+- `Dockerfile`, `docker-compose.yml` and `deploy/`: the production container and the shared Caddy site block. See [DEPLOY.md](DEPLOY.md).
+- `BlackScholes.py`, `streamlit_app.py`: the original Streamlit version.
 
-    + Set custom ranges for Spot Price and Volatility to generate a comprehensive view of option prices under different market conditions.
+## Running locally
 
-## 🔧 Dependencies:
-- **`yfinance`** : To fetch current asset prices.  
-- **`numpy`** : For numerical operations.  
-- **`matplotlib`** : For heatmap visualization.
+```sh
+cd web
+npm install
+npm run dev
+```

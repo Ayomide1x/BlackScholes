@@ -1,0 +1,24 @@
+# One static container. Published on loopback only; the VM's shared Caddy
+# (its own Compose project, host networking) proxies to it.
+name: blackscholes
+
+services:
+  web:
+    build: .
+    image: blackscholes-web
+    ports:
+      - "127.0.0.1:3410:8080"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /config
+      - /data
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

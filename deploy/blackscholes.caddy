@@ -1,0 +1,5 @@
+# Site block for the VM's shared Caddy (DEPLOY.md, step 3). The app container
+# listens only on 127.0.0.1:3410 and already compresses its responses.
+blackscholes.ayomideo.dev {
+	reverse_proxy 127.0.0.1:3410
+}
