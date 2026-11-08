@@ -884,3 +884,39 @@ sup {
     grid-template-columns: 1fr;
   }
 }
+
+/* Fit history */
+
+.history {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem 1.5rem;
+}
+
+.history figcaption {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  font-weight: 400;
+  font-size: 0.9375rem;
+}
+
+.history-now {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.history path.fit-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.75;
+}
+
+.history .history-dot {
+  fill: var(--ink);
+}
+
+.history-h {
+  margin-top: 2.5rem;
+  font-size: 1.125rem;
+}

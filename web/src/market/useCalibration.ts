@@ -21,6 +21,9 @@ export interface Calibration {
   expiries: CalibrationExpiry[];
 }
 
+/** One day of /api/calibrations: the fit without its per-expiry points. */
+export type FitSummary = Omit<Calibration, "expiries" | "fittedAt">;
+
 export interface RunStatus {
   status: "running" | "ok" | "rejected" | "failed";
   date: string | null;
@@ -30,7 +33,7 @@ export interface RunStatus {
 
 export type CalibrationState =
   | { kind: "loading" }
-  | { kind: "ready"; fit: Calibration | null; lastRun: RunStatus | null }
+  | { kind: "ready"; fit: Calibration | null; history: FitSummary[]; lastRun: RunStatus | null }
   | { kind: "unavailable" }; // no API (the site can run without one) or it errored
 
 async function getJson(url: string): Promise<{ status: number; body: unknown }> {
@@ -43,16 +46,25 @@ async function getJson(url: string): Promise<{ status: number; body: unknown }> 
 
 async function load(): Promise<CalibrationState> {
   try {
-    const [latest, health] = await Promise.all([getJson("/api/calibrations/latest"), getJson("/api/health")]);
+    const [latest, health, past] = await Promise.all([
+      getJson("/api/calibrations/latest"),
+      getJson("/api/health"),
+      getJson(`/api/calibrations?limit=${HISTORY_DAYS}`),
+    ]);
     // 404: no fit has succeeded yet; 503: the job has never run.
     const fit = latest.status === 200 ? (latest.body as Calibration) : null;
     if (fit === null && latest.status !== 404 && latest.status !== 503) return { kind: "unavailable" };
     const lastRun = (health.body as { lastRun: RunStatus | null }).lastRun ?? null;
-    return { kind: "ready", fit, lastRun };
+    // The API lists newest first; charts read left to right in time.
+    const history = past.status === 200 ? (past.body as FitSummary[]).slice().reverse() : [];
+    return { kind: "ready", fit, history, lastRun };
   } catch {
     return { kind: "unavailable" };
   }
 }
+
+// About six months of weekdays.
+const HISTORY_DAYS = 130;
 
 // Fits change once a day, so one request per page load is plenty.
 let pending: Promise<CalibrationState> | null = null;

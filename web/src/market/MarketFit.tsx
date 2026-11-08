@@ -2,6 +2,7 @@ import { useState } from "react";
 import { niceTicks } from "../chart";
 import { fmt, signed } from "../format";
 import type { Params } from "../models";
+import { ParamHistory } from "./ParamHistory";
 import type { Calibration, CalibrationExpiry, CalibrationState, RunStatus } from "./useCalibration";
 
 const day = (iso: string) =>
@@ -35,7 +36,7 @@ export function MarketFit({ state, onUse }: { state: CalibrationState; onUse: (i
   if (state.kind === "unavailable")
     return <p className="waiting">The calibration service isn't reachable right now, so there's no market fit to show.</p>;
 
-  const { fit, lastRun } = state;
+  const { fit, history, lastRun } = state;
   if (!fit)
     return (
       <>
@@ -141,6 +142,12 @@ export function MarketFit({ state, onUse }: { state: CalibrationState; onUse: (i
         </span>
         <span>Strike as a percentage of each expiry's forward price</span>
       </p>
+
+      <h3 className="history-h">How the fit has moved</h3>
+      <p className="lede">
+        Each day's fitted values over the last six months. Point at a dot for its date and value.
+      </p>
+      <ParamHistory history={history} />
     </div>
   );
 }
