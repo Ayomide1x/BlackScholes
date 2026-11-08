@@ -12,6 +12,7 @@ https://blackscholes.ayomideo.dev
 - Plots option value today against payoff at expiry across spot prices.
 - For Monte Carlo, shows each price with a 95% confidence interval and a chart of the estimate settling as paths are added.
 - For Heston and Merton, draws the implied-volatility smile: the Black–Scholes volatility each strike's price implies, for three maturities.
+- For Heston, shows the latest fit to S&P 500 index options: the market's implied volatilities against the fitted model's for each expiry, the fit's error and date, and a button that loads the fitted parameters into the Heston inputs.
 
 Everything recalculates in the browser as you type or drag, so there is no server round trip. The slower models (binomial, Monte Carlo and Heston) run in a Web Worker so the page stays responsive: the heatmap fills in row by row, and changing an input cancels the work in progress.
 

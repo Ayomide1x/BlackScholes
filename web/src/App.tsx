@@ -3,6 +3,8 @@ import { MODELS, blackScholes, linspace, validate, type Market, type Model, type
 import { usePricing } from "./pricing/usePricing";
 import { Convergence } from "./Convergence";
 import { SmileChart } from "./SmileChart";
+import { MarketFit } from "./market/MarketFit";
+import { useCalibration } from "./market/useCalibration";
 import { NumberField } from "./NumberField";
 import { Formula } from "./Formula";
 import { GreeksTable } from "./GreeksTable";
@@ -91,6 +93,7 @@ export function App() {
     valid: !error,
     grid: gridSpec,
   });
+  const calibration = useCalibration(model.id === "heston");
   const note = error ? null : (model.note?.(params, market) ?? null);
   const reference =
     prices && model.compareWithBlackScholes ? blackScholes.price(market, { vol: params[model.volParam] }) : null;
@@ -254,6 +257,23 @@ export function App() {
                 ) : (
                   <p className="waiting">Calculating…</p>
                 )}
+              </section>
+            )}
+
+            {model.id === "heston" && (
+              <section aria-labelledby="market-h">
+                <h2 id="market-h">Fitted to the market</h2>
+                <p className="lede">
+                  Each weekday afternoon a job fits Heston to S&amp;P 500 index options. Dots are the volatilities
+                  implied by market prices, lines the fitted model's, one panel per expiry.
+                </p>
+                <MarketFit
+                  state={calibration}
+                  onUse={(inputs) => {
+                    setShownByModel((s) => ({ ...s, heston: { ...s.heston, ...inputs } }));
+                    setCustomRange(null);
+                  }}
+                />
               </section>
             )}
 
