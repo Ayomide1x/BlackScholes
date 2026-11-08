@@ -693,3 +693,45 @@ sup {
 .inputs > button.quiet {
   grid-column: 1 / -1;
 }
+
+/* Results still being recomputed in the background. The delay keeps quick
+   updates from flickering. */
+.stale,
+.busy {
+  opacity: 0.45;
+  transition: opacity 0.2s 0.15s;
+}
+
+.heatmap td.pending {
+  background: color-mix(in oklch, var(--rule) 35%, var(--surface));
+}
+
+.interval {
+  margin: 0.375rem 0 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.waiting {
+  color: var(--muted);
+  margin: 0;
+}
+
+.convergence path.band {
+  stroke: none;
+  opacity: 0.16;
+}
+
+.convergence path.band.call {
+  fill: var(--call);
+}
+
+.convergence path.band.put {
+  fill: var(--put);
+}
+
+.convergence .exact {
+  stroke: var(--ink);
+  stroke-dasharray: 2 4;
+  stroke-opacity: 0.6;
+}

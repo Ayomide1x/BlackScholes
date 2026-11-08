@@ -20,6 +20,8 @@ export interface ParamSpec {
   integer?: boolean; // whole numbers only, e.g. tree steps
   /** A fixed set of values shown as a switch instead of a number box. */
   choices?: { value: number; label: string }[];
+  /** Only shown, and only used, while another parameter has this value. */
+  onlyWhen?: { key: string; value: number };
 }
 
 /** Model-specific inputs, in model units, keyed by ParamSpec.key. */
@@ -43,6 +45,24 @@ export interface OptionGreeks {
   put: Greeks;
 }
 
+export interface ConvergencePoint {
+  paths: number;
+  call: number;
+  put: number;
+  callSE: number; // standard error of the estimate
+  putSE: number;
+}
+
+/** A simulated price with its uncertainty. */
+export interface Estimate extends Prices {
+  callSE: number;
+  putSE: number;
+  /** Running estimates as paths were added. */
+  convergence: ConvergencePoint[];
+  /** The exact price, when a formula exists for these inputs. */
+  exact?: Prices;
+}
+
 export interface Model {
   id: string;
   name: string;
@@ -62,4 +82,8 @@ export interface Model {
   price(market: Market, params: Params): Prices;
   /** Exact Greeks, when the model has them; otherwise they're estimated numerically. */
   greeks?(market: Market, params: Params): OptionGreeks;
+  /** For simulation models: the price with its standard error and convergence. */
+  estimate?(market: Market, params: Params): Estimate;
+  /** Slow enough that the page computes it in a background worker. */
+  heavy?: boolean;
 }

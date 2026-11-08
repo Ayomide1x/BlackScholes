@@ -130,6 +130,7 @@ export const binomial: Model = {
   assumptions:
     "Prices options on a non-dividend-paying asset with a Cox–Ross–Rubinstein tree, assuming constant volatility and interest rate.",
   compareWithBlackScholes: true,
+  heavy: true,
   validate: (p, m) => {
     if (![p.vol, p.steps].every(Number.isFinite)) return "Fill in every input with a number.";
     if (p.vol <= 0) return "Volatility must be above zero.";

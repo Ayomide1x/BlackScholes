@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
-import { MODELS, blackScholes, greeksOf, linspace, priceGrid, validate, type Market, type Model, type Params } from "./models";
+import { MODELS, blackScholes, linspace, validate, type Market, type Model, type Params } from "./models";
+import { usePricing } from "./pricing/usePricing";
+import { Convergence } from "./Convergence";
 import { NumberField } from "./NumberField";
 import { Formula } from "./Formula";
 import { GreeksTable } from "./GreeksTable";
@@ -72,13 +74,24 @@ export function App() {
     [model, shown],
   );
   const error = validate(model, market, params);
-  const prices = error ? null : model.price(market, params);
-  const reference =
-    prices && model.compareWithBlackScholes ? blackScholes.price(market, { vol: params[model.volParam] }) : null;
-  const greeks = useMemo(() => (error ? null : greeksOf(model, market, params)), [error, model, market, params]);
-
   const range = customRange ?? rangeAround(form, shown[model.volParam]);
   const rError = rangeError(range, volSpec.label.toLowerCase());
+  const axes = useMemo(() => {
+    if (rError) return null;
+    const vols = linspace(range.volMin, range.volMax, cells);
+    return { spots: linspace(range.spotMin, range.spotMax, cells), vols, modelVols: vols.map((v) => v * volSpec.scale) };
+  }, [rError, range.spotMin, range.spotMax, range.volMin, range.volMax, cells, volSpec]);
+  const gridSpec = useMemo(() => (axes ? { spots: axes.spots, vols: axes.modelVols } : null), [axes]);
+
+  const { prices, estimate, greeks, grid, curve, busy } = usePricing({
+    model,
+    market,
+    params,
+    valid: !error,
+    grid: gridSpec,
+  });
+  const reference =
+    prices && model.compareWithBlackScholes ? blackScholes.price(market, { vol: params[model.volParam] }) : null;
   const set = (k: keyof Form) => (v: number) => setForm((f) => ({ ...f, [k]: v }));
   const setParam = (k: string) => (v: number) =>
     setShownByModel((s) => ({ ...s, [model.id]: { ...s[model.id], [k]: v } }));
@@ -87,16 +100,6 @@ export function App() {
     setCustomRange(null);
   };
   const setRange = (k: keyof Range) => (v: number) => setCustomRange({ ...range, [k]: v });
-
-  const heat = useMemo(() => {
-    if (error || rError) return null;
-    const spots = linspace(range.spotMin, range.spotMax, cells);
-    const vols = linspace(range.volMin, range.volMax, cells);
-    const grid = priceGrid(model, market, params, spots, vols.map((v) => v * volSpec.scale));
-    return { spots, vols, ...grid };
-    // The grid ignores spot and volatility themselves, so dragging those doesn't reprice it.
-  }, [error, rError, range.spotMin, range.spotMax, range.volMin, range.volMax, cells, model, volSpec,
-      market.strike, market.time, market.rate, otherParamsKey(params, model.volParam)]);
 
   return (
     <>
@@ -115,7 +118,7 @@ export function App() {
             <NumberField symbol={<i>{underlying.symbol}</i>} label={underlying.label} value={form.spot} onChange={set("spot")} min={1} max={500} step={0.5} />
             <NumberField symbol={<i>K</i>} label="Strike price" value={form.strike} onChange={set("strike")} min={1} max={500} step={0.5} />
             <NumberField symbol={<i>T</i>} label="Time to maturity" value={form.time} onChange={set("time")} min={0.01} max={5} step={0.01} suffix="years" />
-            {model.params.map((p) =>
+            {model.params.filter((p) => !p.onlyWhen || shown[p.onlyWhen.key] === p.onlyWhen.value).map((p) =>
               p.choices ? (
                 <ChoiceField
                   key={p.key}
@@ -145,24 +148,37 @@ export function App() {
             </button>
           </form>
 
-          <div className="results">
-            {prices && model.id === blackScholes.id ? (
-              <Formula market={market} vol={params.vol} prices={prices} />
-            ) : prices ? (
-              <PricePanel prices={prices} reference={reference} />
-            ) : (
+          <div className={busy.prices ? "results busy" : "results"}>
+            {error ? (
               <p className="error" role="alert">{error}</p>
+            ) : !prices ? (
+              <p className="waiting">Calculating…</p>
+            ) : model.id === blackScholes.id ? (
+              <Formula market={market} vol={params.vol} prices={prices} />
+            ) : (
+              <PricePanel prices={prices} estimate={estimate} reference={reference} />
             )}
           </div>
         </section>
 
-        {prices && greeks && (
+        {!error && (
           <>
-            <section aria-labelledby="greeks-h">
+            <section aria-labelledby="greeks-h" className={busy.greeks ? "busy" : undefined}>
               <h2 id="greeks-h">Sensitivities</h2>
               <p className="lede">How each price responds to small changes in one input, with the others held still.</p>
-              <GreeksTable greeks={greeks} vol={volSpec} />
+              {greeks ? <GreeksTable greeks={greeks} vol={volSpec} /> : <p className="waiting">Calculating…</p>}
             </section>
+
+            {estimate && (
+              <section aria-labelledby="conv-h" className={busy.prices ? "busy" : undefined}>
+                <h2 id="conv-h">How the estimate settles</h2>
+                <p className="lede">
+                  The simulated price after each batch of paths. More paths narrow the range, but halving it takes four
+                  times as many.
+                </p>
+                <Convergence estimate={estimate} />
+              </section>
+            )}
 
             <section aria-labelledby="heat-h">
               <h2 id="heat-h">
@@ -193,17 +209,20 @@ export function App() {
                   </button>
                 )}
               </div>
-              {rError || !heat ? (
+              {rError || !axes ? (
                 <p className="error" role="alert">{rError}</p>
+              ) : !grid ? (
+                <p className="waiting">Calculating…</p>
               ) : (
                 <div className="heatmaps">
                   {(["call", "put"] as const).map((kind) => (
                     <Heatmap
                       key={kind}
                       kind={kind}
-                      grid={heat[kind]}
-                      spots={heat.spots}
-                      vols={heat.vols}
+                      grid={grid[kind]}
+                      fresh={grid.fresh}
+                      spots={axes.spots}
+                      vols={axes.vols}
                       volSpec={volSpec}
                       underlying={underlying}
                       current={{ spot: market.spot, vol: shown[model.volParam] }}
@@ -215,7 +234,13 @@ export function App() {
 
             <section aria-labelledby="curve-h">
               <h2 id="curve-h">Value across {underlying.label.toLowerCase()}s</h2>
-              <PriceCurve model={model} market={market} params={params} underlying={underlying} />
+              {curve ? (
+                <div className={busy.curve ? "busy" : undefined}>
+                  <PriceCurve data={curve} spot={market.spot} strike={market.strike} prices={prices} underlying={underlying} />
+                </div>
+              ) : (
+                <p className="waiting">Calculating…</p>
+              )}
             </section>
           </>
         )}
@@ -228,11 +253,6 @@ export function App() {
       </footer>
     </>
   );
-}
-
-/** A stable key for every parameter except the one the heatmap varies. */
-function otherParamsKey(params: Params, skip: string) {
-  return JSON.stringify(Object.entries(params).filter(([k]) => k !== skip));
 }
 
 function RangeBox(props: { label: string; value: number; onChange: (v: number) => void; suffix?: string }) {

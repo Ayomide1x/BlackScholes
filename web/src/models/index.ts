@@ -2,13 +2,17 @@ import { black76 } from "./black76";
 import { binomial } from "./binomial";
 import { blackScholes } from "./blackScholes";
 import { merton } from "./merton";
-import type { Market, Model, OptionGreeks, Params, Prices } from "./types";
+import { monteCarlo } from "./monteCarlo";
+import { numericGreeks } from "./greeks";
+import { linspace } from "./math";
+import type { Estimate, Market, Model, OptionGreeks, Params, Prices } from "./types";
 
-export type { Market, Model, OptionGreeks, ParamSpec, Params, Prices } from "./types";
+export type { ConvergencePoint, Estimate, Market, Model, OptionGreeks, ParamSpec, Params, Prices } from "./types";
 export { linspace } from "./math";
+export { numericGreeks } from "./greeks";
 
 /** Every model the app offers, in menu order. */
-export const MODELS: Model[] = [blackScholes, binomial, merton, black76];
+export const MODELS: Model[] = [blackScholes, binomial, monteCarlo, merton, black76];
 
 export { blackScholes };
 
@@ -23,51 +27,6 @@ export function validateMarket(m: Market): string | null {
 
 export function validate(model: Model, market: Market, params: Params): string | null {
   return validateMarket(market) ?? model.validate(params, market);
-}
-
-/**
- * Greeks by central differences on the model's own price, for models without
- * exact formulas. Bumps are relative to each input so they suit any scale.
- */
-export function numericGreeks(model: Model, market: Market, params: Params): OptionGreeks {
-  const at = (m: Partial<Market>, p: Params = {}) => model.price({ ...market, ...m }, { ...params, ...p });
-  const both = (f: (k: keyof Prices) => number) => ({ call: f("call"), put: f("put") });
-
-  // Small enough for short-dated, low-volatility options, whose price curves
-  // sharply near the strike; rounding error in gamma stays below 1e-8.
-  const hS = market.spot * 1e-5;
-  const up = at({ spot: market.spot + hS });
-  const mid = at({});
-  const down = at({ spot: market.spot - hS });
-
-  const v = params[model.volParam];
-  const hV = Math.max(v * 1e-3, 1e-6);
-  const vUp = at({}, { [model.volParam]: v + hV });
-  const vDown = at({}, { [model.volParam]: v - hV });
-
-  // Theta looks forward in calendar time, so it shortens maturity; keep T - h above zero.
-  const hT = Math.min(1e-4, market.time / 2);
-  const tUp = at({ time: market.time + hT });
-  const tDown = at({ time: market.time - hT });
-
-  const hR = 1e-4;
-  const rUp = at({ rate: market.rate + hR });
-  const rDown = at({ rate: market.rate - hR });
-
-  const delta = both((k) => (up[k] - down[k]) / (2 * hS));
-  const gamma = both((k) => (up[k] - 2 * mid[k] + down[k]) / (hS * hS));
-  const vega = both((k) => (vUp[k] - vDown[k]) / (2 * hV));
-  const theta = both((k) => -(tUp[k] - tDown[k]) / (2 * hT));
-  const rho = both((k) => (rUp[k] - rDown[k]) / (2 * hR));
-
-  const side = (k: keyof Prices) => ({
-    delta: delta[k],
-    gamma: gamma[k],
-    vega: vega[k],
-    theta: theta[k],
-    rho: rho[k],
-  });
-  return { call: side("call"), put: side("put") };
 }
 
 export function greeksOf(model: Model, market: Market, params: Params): OptionGreeks {
@@ -90,4 +49,38 @@ export function priceGrid(model: Model, market: Market, params: Params, spots: n
     put.push(pRow);
   }
   return { call, put };
+}
+
+export interface CurvePoint extends Prices {
+  spot: number;
+  callPayoff: number;
+  putPayoff: number;
+}
+
+/** Option value today and payoff at expiry, from 40% to 160% of the strike. */
+export function curvePoints(model: Model, market: Market, params: Params, points = 81): CurvePoint[] {
+  const spots = linspace(Math.max(market.strike * 0.4, 0.01), market.strike * 1.6, points);
+  return spots.map((spot) => {
+    const r = model.price({ ...market, spot }, params);
+    return {
+      spot,
+      call: r.call,
+      put: r.put,
+      callPayoff: Math.max(spot - market.strike, 0),
+      putPayoff: Math.max(market.strike - spot, 0),
+    };
+  });
+}
+
+export interface Summary {
+  prices: Prices;
+  estimate: Estimate | null;
+  greeks: OptionGreeks | null; // null while a worker is still computing them
+}
+
+/** Prices (with the simulation's error, if any) and Greeks at the current inputs. */
+export function summarize(model: Model, market: Market, params: Params): Summary {
+  const estimate = model.estimate?.(market, params) ?? null;
+  const prices = estimate ? { call: estimate.call, put: estimate.put } : model.price(market, params);
+  return { prices, estimate, greeks: greeksOf(model, market, params) };
 }

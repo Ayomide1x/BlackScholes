@@ -1,6 +1,6 @@
 # Black–Scholes option pricer
 
-An interactive option pricer: Black–Scholes, plus a binomial tree for American options, Merton's jump-diffusion, and Black-76 for options on futures.
+An interactive option pricer: Black–Scholes, plus a binomial tree for American options, Monte Carlo simulation (including Asian options), Merton's jump-diffusion, and Black-76 for options on futures.
 
 https://blackscholes.ayomideo.dev
 
@@ -10,8 +10,9 @@ https://blackscholes.ayomideo.dev
 - Shows all five Greeks (delta, gamma, vega, theta, rho) for both options, in trader units: vega and rho per percentage point, theta per day.
 - Draws call and put heatmaps across a range of spot prices and volatilities. The range follows your inputs, or you can set it yourself.
 - Plots option value today against payoff at expiry across spot prices.
+- For Monte Carlo, shows each price with a 95% confidence interval and a chart of the estimate settling as paths are added.
 
-Everything recalculates in the browser as you type or drag, so there is no server round trip.
+Everything recalculates in the browser as you type or drag, so there is no server round trip. The slower models (binomial and Monte Carlo) run in a Web Worker so the page stays responsive: the heatmap fills in row by row, and changing an input cancels the work in progress.
 
 ## Layout
 

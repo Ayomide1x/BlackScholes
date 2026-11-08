@@ -1,50 +1,27 @@
-import { useMemo, useState } from "react";
-import { linspace, type Market, type Model, type Params } from "./models";
-import { fmt, money } from "./format";
+import { useState } from "react";
+import type { CurvePoint, Prices } from "./models";
+import { niceTicks } from "./chart";
+import { money } from "./format";
 
 const W = 720;
 const H = 300;
 const PAD = { top: 16, right: 16, bottom: 36, left: 52 };
-const POINTS = 81;
-
-function niceTicks(lo: number, hi: number, count: number) {
-  const raw = (hi - lo) / count;
-  const mag = 10 ** Math.floor(Math.log10(raw));
-  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? raw;
-  const ticks: number[] = [];
-  for (let t = Math.ceil(lo / step) * step; t <= hi + 1e-9; t += step) ticks.push(t);
-  const digits = step >= 1 ? 0 : step >= 0.1 ? 1 : 2;
-  return ticks.map((t) => ({ t, label: fmt(t, digits) }));
-}
 
 /** Option value today and payoff at expiry, across underlying prices around the strike. */
 export function PriceCurve({
-  model,
-  market: inputs,
-  params,
+  data,
+  spot,
+  strike,
+  prices,
   underlying,
 }: {
-  model: Model;
-  market: Market;
-  params: Params;
+  data: CurvePoint[];
+  spot: number;
+  strike: number;
+  prices: Prices | null; // at the current spot, for the dots
   underlying: { label: string };
 }) {
   const [hover, setHover] = useState<number | null>(null);
-
-  const data = useMemo(() => {
-    const centre = inputs.strike;
-    const spots = linspace(Math.max(centre * 0.4, 0.01), centre * 1.6, POINTS);
-    return spots.map((spot) => {
-      const r = model.price({ ...inputs, spot }, params);
-      return {
-        spot,
-        call: r.call,
-        put: r.put,
-        callPayoff: Math.max(spot - inputs.strike, 0),
-        putPayoff: Math.max(inputs.strike - spot, 0),
-      };
-    });
-  }, [model, inputs, params]);
 
   const xLo = data[0].spot;
   const xHi = data[data.length - 1].spot;
@@ -55,7 +32,7 @@ export function PriceCurve({
     data.map((d, i) => `${i ? "L" : "M"}${x(d.spot).toFixed(1)},${y(d[key]).toFixed(1)}`).join("");
 
   const at = hover === null ? null : data[hover];
-  const now = inputs.spot >= xLo && inputs.spot <= xHi ? model.price(inputs, params) : null;
+  const now = spot >= xLo && spot <= xHi ? prices : null;
 
   return (
     <figure className="curve">
@@ -67,7 +44,7 @@ export function PriceCurve({
           const box = e.currentTarget.getBoundingClientRect();
           const sx = ((e.clientX - box.left) / box.width) * W;
           const t = (sx - PAD.left) / (W - PAD.left - PAD.right);
-          setHover(t < 0 || t > 1 ? null : Math.round(t * (POINTS - 1)));
+          setHover(t < 0 || t > 1 ? null : Math.round(t * (data.length - 1)));
         }}
         onPointerLeave={() => setHover(null)}
       >
@@ -84,8 +61,8 @@ export function PriceCurve({
             {label}
           </text>
         ))}
-        <line className="strike" x1={x(inputs.strike)} x2={x(inputs.strike)} y1={PAD.top} y2={H - PAD.bottom} />
-        <text className="strike-label" x={x(inputs.strike) + 6} y={PAD.top + 10}>
+        <line className="strike" x1={x(strike)} x2={x(strike)} y1={PAD.top} y2={H - PAD.bottom} />
+        <text className="strike-label" x={x(strike) + 6} y={PAD.top + 10}>
           K
         </text>
         <path className="payoff call" d={path("callPayoff")} />
@@ -94,8 +71,8 @@ export function PriceCurve({
         <path className="value put" d={path("put")} />
         {now && (
           <g className="now">
-            <circle cx={x(inputs.spot)} cy={y(now.call)} r={4.5} className="call" />
-            <circle cx={x(inputs.spot)} cy={y(now.put)} r={4.5} className="put" />
+            <circle cx={x(spot)} cy={y(now.call)} r={4.5} className="call" />
+            <circle cx={x(spot)} cy={y(now.put)} r={4.5} className="put" />
           </g>
         )}
         {at && (

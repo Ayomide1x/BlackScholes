@@ -3,7 +3,8 @@ import type { ParamSpec } from "./models";
 
 interface Props {
   kind: "call" | "put";
-  grid: number[][]; // rows = vols (ascending), cols = spots (ascending)
+  grid: (number | null)[][]; // rows = vols (ascending), cols = spots (ascending); null until priced
+  fresh: boolean[]; // per row: priced with the current inputs
   spots: number[];
   vols: number[]; // the model's volatility input, in display units
   volSpec: ParamSpec;
@@ -19,11 +20,11 @@ function nearest(values: number[], x: number) {
   return best;
 }
 
-export function Heatmap({ kind, grid, spots, vols, volSpec, underlying, current }: Props) {
+export function Heatmap({ kind, grid, fresh, spots, vols, volSpec, underlying, current }: Props) {
   const suffix = volSpec.suffix === "%" ? "%" : "";
-  const flat = grid.flat();
-  const lo = Math.min(...flat);
-  const hi = Math.max(...flat);
+  const flat = grid.flat().filter((v): v is number => v !== null);
+  const lo = flat.length ? Math.min(...flat) : 0;
+  const hi = flat.length ? Math.max(...flat) : 0;
   // Only mark the current inputs when they fall inside the grid.
   const inside =
     current.spot >= spots[0] &&
@@ -40,21 +41,22 @@ export function Heatmap({ kind, grid, spots, vols, volSpec, underlying, current 
       <figcaption>
         <span className="heatmap-title">{kind === "call" ? "Call" : "Put"} price</span>
         <span className="legend" aria-hidden="true">
-          {fmt(lo)}
+          {flat.length ? fmt(lo) : ""}
           <span className="legend-bar" />
-          {fmt(hi)}
+          {flat.length ? fmt(hi) : ""}
         </span>
       </figcaption>
       <div className="heatmap-scroll">
         <table style={{ "--cols": spots.length } as React.CSSProperties}>
           <tbody>
             {rows.map((r) => (
-              <tr key={r}>
+              <tr key={r} className={fresh[r] ? undefined : "stale"}>
                 <th scope="row">
                   {fmt(vols[r], 0)}
                   {suffix}
                 </th>
                 {grid[r].map((v, c) => {
+                  if (v === null) return <td key={c} className="pending" />;
                   const t = hi > lo ? (v - lo) / (hi - lo) : 0.5;
                   const mix = Math.round(6 + 84 * t);
                   return (
