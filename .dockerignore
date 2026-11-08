@@ -2,3 +2,6 @@
 web/dist
 .git
 .claude
+api/.venv
+**/__pycache__
+**/.pytest_cache

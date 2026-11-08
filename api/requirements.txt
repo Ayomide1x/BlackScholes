@@ -1,0 +1,6 @@
+numpy==2.5.4
+scipy==1.18.1
+fastapi==0.162.2
+uvicorn==0.54.0
+yfinance==1.8.0
+tzdata==2026.6

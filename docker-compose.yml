@@ -1,14 +1,24 @@
-# One static container. Published on loopback only; the VM's shared Caddy
-# (its own Compose project, host networking) proxies to it.
+# The site, the calibration API, and the daily calibrator job. Only the web
+# container publishes a port, on loopback; the VM's shared Caddy (its own
+# Compose project, host networking) proxies to it, and the web container
+# passes /api on to the API over this project's network.
 name: blackscholes
+
+x-defaults: &defaults
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
 
 services:
   web:
+    <<: *defaults
     build: .
     image: blackscholes-web
     ports:
       - "127.0.0.1:3410:8080"
-    restart: unless-stopped
     read_only: true
     tmpfs:
       - /config
@@ -17,8 +27,47 @@ services:
       resources:
         limits:
           memory: 64M
+
+  api:
+    <<: *defaults
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    image: blackscholes-api
+    # The API only reads; the job is the database's one writer.
+    volumes:
+      - calibration:/data:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+
+  # Not started by `docker compose up`: cron runs it once a weekday with
+  # `docker compose run --rm calibrator` (DEPLOY.md).
+  calibrator:
+    image: blackscholes-api
+    profiles: ["jobs"]
+    command: ["python", "-m", "calibration.job"]
+    volumes:
+      - calibration:/data
+    restart: "no"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     logging:
       driver: json-file
       options:
         max-size: 10m
         max-file: "3"
+
+volumes:
+  calibration:
