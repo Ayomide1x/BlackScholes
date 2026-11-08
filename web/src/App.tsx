@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { MODELS, blackScholes, linspace, validate, type Market, type Model, type Params } from "./models";
 import { usePricing } from "./pricing/usePricing";
 import { Convergence } from "./Convergence";
+import { SmileChart } from "./SmileChart";
 import { NumberField } from "./NumberField";
 import { Formula } from "./Formula";
 import { GreeksTable } from "./GreeksTable";
@@ -83,13 +84,14 @@ export function App() {
   }, [rError, range.spotMin, range.spotMax, range.volMin, range.volMax, cells, volSpec]);
   const gridSpec = useMemo(() => (axes ? { spots: axes.spots, vols: axes.modelVols } : null), [axes]);
 
-  const { prices, estimate, greeks, grid, curve, busy } = usePricing({
+  const { prices, estimate, greeks, grid, curve, smile, busy } = usePricing({
     model,
     market,
     params,
     valid: !error,
     grid: gridSpec,
   });
+  const note = error ? null : (model.note?.(params, market) ?? null);
   const reference =
     prices && model.compareWithBlackScholes ? blackScholes.price(market, { vol: params[model.volParam] }) : null;
   const set = (k: keyof Form) => (v: number) => setForm((f) => ({ ...f, [k]: v }));
@@ -143,6 +145,7 @@ export function App() {
               ),
             )}
             <NumberField symbol={<i>r</i>} label="Risk-free rate" value={form.ratePct} onChange={set("ratePct")} min={-2} max={15} step={0.05} suffix="%" />
+            {note && <p className="model-note">{note}</p>}
             <button type="button" className="quiet" onClick={() => { setForm(START); setShownByModel((s) => ({ ...s, [model.id]: defaults(model) })); setCustomRange(null); }}>
               Reset inputs
             </button>
@@ -231,6 +234,28 @@ export function App() {
                 </div>
               )}
             </section>
+
+            {model.smile && (
+              <section aria-labelledby="smile-h">
+                <h2 id="smile-h">Implied volatility across strikes</h2>
+                <p className="lede">
+                  The volatility you'd have to put into Black–Scholes to get this model's price at each strike, using
+                  out-of-the-money options. It's how traders compare models with each other and with the market.
+                </p>
+                {smile ? (
+                  <div className={busy.smile ? "busy" : undefined}>
+                    <SmileChart
+                      curves={smile}
+                      spot={market.spot}
+                      flatVol={params[model.volParam]}
+                      flatLabel={`${volSpec.symbol} = ${shown[model.volParam]}${volSpec.suffix ?? ""}`}
+                    />
+                  </div>
+                ) : (
+                  <p className="waiting">Calculating…</p>
+                )}
+              </section>
+            )}
 
             <section aria-labelledby="curve-h">
               <h2 id="curve-h">Value across {underlying.label.toLowerCase()}s</h2>

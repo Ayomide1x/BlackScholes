@@ -1,6 +1,7 @@
 import { black76 } from "./black76";
 import { binomial } from "./binomial";
 import { blackScholes } from "./blackScholes";
+import { heston } from "./heston";
 import { merton } from "./merton";
 import { monteCarlo } from "./monteCarlo";
 import { numericGreeks } from "./greeks";
@@ -10,9 +11,10 @@ import type { Estimate, Market, Model, OptionGreeks, Params, Prices } from "./ty
 export type { ConvergencePoint, Estimate, Market, Model, OptionGreeks, ParamSpec, Params, Prices } from "./types";
 export { linspace } from "./math";
 export { numericGreeks } from "./greeks";
+export { impliedVol, smile, type SmileCurve } from "./impliedVol";
 
 /** Every model the app offers, in menu order. */
-export const MODELS: Model[] = [blackScholes, binomial, monteCarlo, merton, black76];
+export const MODELS: Model[] = [blackScholes, binomial, monteCarlo, heston, merton, black76];
 
 export { blackScholes };
 
@@ -84,3 +86,6 @@ export function summarize(model: Model, market: Market, params: Params): Summary
   const prices = estimate ? { call: estimate.call, put: estimate.put } : model.price(market, params);
   return { prices, estimate, greeks: greeksOf(model, market, params) };
 }
+
+/** Maturities for the smile chart: a quarter of, all of, and twice the option's own. */
+export const smileTimes = (time: number) => [time / 4, time, time * 2];

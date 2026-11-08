@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { MODELS, curvePoints, greeksOf, priceGrid } from "../models";
+import { MODELS, curvePoints, greeksOf, priceGrid, smile, smileTimes } from "../models";
 import type { Reply, Request } from "./protocol";
 
 const post = (reply: Reply) => self.postMessage(reply);
@@ -29,6 +29,9 @@ self.onmessage = (e: MessageEvent<Request>) => {
       break;
     case "curve":
       post({ id, kind: "curve", points: curvePoints(model, market, params) });
+      break;
+    case "smile":
+      post({ id, kind: "smile", curves: smile(model, market, params, smileTimes(market.time)) });
       break;
   }
 };

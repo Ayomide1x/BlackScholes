@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   curvePoints,
   priceGrid,
+  smile,
+  smileTimes,
   summarize,
   type CurvePoint,
   type Estimate,
@@ -10,6 +12,7 @@ import {
   type OptionGreeks,
   type Params,
   type Prices,
+  type SmileCurve,
 } from "../models";
 import type { Reply, Request } from "./protocol";
 
@@ -25,8 +28,9 @@ export interface Pricing {
   greeks: OptionGreeks | null;
   grid: Grid | null;
   curve: CurvePoint[] | null;
+  smile: SmileCurve[] | null; // only for models that draw one
   /** Which results are from earlier inputs and still being recomputed. */
-  busy: { prices: boolean; greeks: boolean; grid: boolean; curve: boolean };
+  busy: { prices: boolean; greeks: boolean; grid: boolean; curve: boolean; smile: boolean };
 }
 
 interface Args {
@@ -64,7 +68,7 @@ class Lane {
   }
 }
 
-const IDLE = { prices: false, greeks: false, grid: false, curve: false };
+const IDLE = { prices: false, greeks: false, grid: false, curve: false, smile: false };
 const blank = (rows: number, cols: number) => Array.from({ length: rows }, () => Array<number | null>(cols).fill(null));
 
 /**
@@ -80,6 +84,8 @@ export function usePricing({ model, market, params, valid, grid }: Args): Pricin
   const gridKey =
     valid && grid ? JSON.stringify([model.id, { ...market, spot: 0 }, { ...params, [model.volParam]: 0 }, grid]) : null;
   const curveKey = valid ? JSON.stringify([model.id, { ...market, spot: 0 }, params]) : null;
+  // The smile varies strike and maturity itself.
+  const smileKey = valid && model.smile ? JSON.stringify([model.id, { ...market, strike: 0 }, params]) : null;
 
   const syncSummary = useMemo(
     () => (!heavy && summaryKey ? summarize(model, market, params) : null),
@@ -94,9 +100,13 @@ export function usePricing({ model, market, params, valid, grid }: Args): Pricin
     () => (!heavy && curveKey ? curvePoints(model, market, params) : null),
     [heavy, curveKey],
   );
+  const syncSmile = useMemo(
+    () => (!heavy && smileKey ? smile(model, market, params, smileTimes(market.time)) : null),
+    [heavy, smileKey],
+  );
 
-  const lanes = useRef<{ summary: Lane; grid: Lane; curve: Lane } | null>(null);
-  lanes.current ??= { summary: new Lane(), grid: new Lane(), curve: new Lane() };
+  const lanes = useRef<{ summary: Lane; grid: Lane; curve: Lane; smile: Lane } | null>(null);
+  lanes.current ??= { summary: new Lane(), grid: new Lane(), curve: new Lane(), smile: new Lane() };
   useEffect(() => () => Object.values(lanes.current!).forEach((l) => l.stop()), []);
   useEffect(() => {
     if (!heavy) Object.values(lanes.current!).forEach((l) => l.stop());
@@ -112,6 +122,7 @@ export function usePricing({ model, market, params, valid, grid }: Args): Pricin
   } | null>(null);
   const [heat, setHeat] = useState<{ shape: string; grid: Grid; busy: boolean } | null>(null);
   const [curve, setCurve] = useState<{ modelId: string; points: CurvePoint[]; busy: boolean } | null>(null);
+  const [smiles, setSmiles] = useState<{ modelId: string; curves: SmileCurve[]; busy: boolean } | null>(null);
 
   useEffect(() => {
     if (!heavy || !summaryKey) return;
@@ -172,24 +183,46 @@ export function usePricing({ model, market, params, valid, grid }: Args): Pricin
     );
   }, [heavy, curveKey]);
 
-  if (!valid) return { prices: null, estimate: null, greeks: null, grid: null, curve: null, busy: IDLE };
-  if (!heavy) return { ...(syncSummary ?? { prices: null, estimate: null, greeks: null }), grid: syncGrid, curve: syncCurve, busy: IDLE };
+  useEffect(() => {
+    if (!heavy || !smileKey) return;
+    setSmiles((s) => (s?.modelId === model.id ? { ...s, busy: true } : null));
+    lanes.current!.smile.run(
+      (id) => ({ id, kind: "smile", modelId: model.id, market, params }),
+      (r) => {
+        if (r.kind === "smile") setSmiles({ modelId: model.id, curves: r.curves, busy: false });
+      },
+      (r) => r.kind === "smile",
+    );
+  }, [heavy, smileKey]);
+
+  if (!valid) return { prices: null, estimate: null, greeks: null, grid: null, curve: null, smile: null, busy: IDLE };
+  if (!heavy)
+    return {
+      ...(syncSummary ?? { prices: null, estimate: null, greeks: null }),
+      grid: syncGrid,
+      curve: syncCurve,
+      smile: syncSmile,
+      busy: IDLE,
+    };
 
   const s = summary?.modelId === model.id ? summary : null;
   // Only a grid of the current size can be drawn against the current axes.
   const h = grid && heat?.shape === `${model.id}:${grid.vols.length}x${grid.spots.length}` ? heat : null;
   const c = curve?.modelId === model.id ? curve : null;
+  const sm = model.smile && smiles?.modelId === model.id ? smiles : null;
   return {
     prices: s?.prices ?? null,
     estimate: s?.estimate ?? null,
     greeks: s?.greeks ?? null,
     grid: h?.grid ?? null,
     curve: c?.points ?? null,
+    smile: sm?.curves ?? null,
     busy: {
       prices: s?.pricesBusy ?? true,
       greeks: s?.greeksBusy ?? true,
       grid: h?.busy ?? true,
       curve: c?.busy ?? true,
+      smile: sm?.busy ?? true,
     },
   };
 }

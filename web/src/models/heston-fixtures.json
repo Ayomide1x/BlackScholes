@@ -1,0 +1,66 @@
+[
+  {
+    "market": {
+      "spot": 100,
+      "strike": 100,
+      "time": 1.0,
+      "rate": 0.05
+    },
+    "params": {
+      "vol0": 0.2,
+      "longVol": 0.2,
+      "kappa": 2.0,
+      "xi": 0.5,
+      "rho": -0.7
+    },
+    "call": 10.154627024703899
+  },
+  {
+    "market": {
+      "spot": 100,
+      "strike": 80,
+      "time": 0.5,
+      "rate": 0.03
+    },
+    "params": {
+      "vol0": 0.25,
+      "longVol": 0.3,
+      "kappa": 1.0,
+      "xi": 0.8,
+      "rho": -0.5
+    },
+    "call": 22.536912220002193
+  },
+  {
+    "market": {
+      "spot": 100,
+      "strike": 125,
+      "time": 2.0,
+      "rate": 0.02
+    },
+    "params": {
+      "vol0": 0.15,
+      "longVol": 0.2,
+      "kappa": 3.0,
+      "xi": 0.3,
+      "rho": 0.3
+    },
+    "call": 4.699984035116618
+  },
+  {
+    "market": {
+      "spot": 100,
+      "strike": 95,
+      "time": 0.25,
+      "rate": 0.04
+    },
+    "params": {
+      "vol0": 0.3,
+      "longVol": 0.25,
+      "kappa": 4.0,
+      "xi": 0.6,
+      "rho": -0.8
+    },
+    "call": 9.101941415344811
+  }
+]

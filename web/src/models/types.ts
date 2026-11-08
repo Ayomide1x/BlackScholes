@@ -86,4 +86,8 @@ export interface Model {
   estimate?(market: Market, params: Params): Estimate;
   /** Slow enough that the page computes it in a background worker. */
   heavy?: boolean;
+  /** Draw the implied-volatility smile: worthwhile where the model isn't flat in strike. */
+  smile?: boolean;
+  /** A caution about these inputs that doesn't stop pricing, shown under the inputs. */
+  note?(params: Params, market: Market): string | null;
 }

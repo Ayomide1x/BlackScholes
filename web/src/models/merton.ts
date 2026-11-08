@@ -50,6 +50,7 @@ export const merton: Model = {
   assumptions:
     "Prices European options on a non-dividend-paying asset whose price diffuses with constant volatility and jumps at random times by log-normal amounts.",
   compareWithBlackScholes: true,
+  smile: true,
   validate: (p) => {
     if (![p.vol, p.lambda, p.jumpMean, p.jumpVol].every(Number.isFinite)) return "Fill in every input with a number.";
     if (p.vol <= 0) return "Volatility must be above zero.";
