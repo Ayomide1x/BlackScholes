@@ -612,3 +612,84 @@ sup {
     padding-right: 0.5rem;
   }
 }
+
+/* Model and choice switches */
+
+.switch {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.switch legend {
+  padding: 0;
+  margin-bottom: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.switch-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.switch label {
+  position: relative;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.switch span {
+  display: block;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  background: var(--surface);
+}
+
+.switch input:checked + span {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.switch input:focus-visible + span {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.switch label:hover span {
+  border-color: var(--ink);
+}
+
+.model-about {
+  margin: -0.375rem 0 0.25rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.compare {
+  margin: 0.875rem 0 0;
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+.compare b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.model-switch,
+.model-about,
+.inputs > button.quiet {
+  grid-column: 1 / -1;
+}

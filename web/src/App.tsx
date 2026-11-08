@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
-import { MODELS, greeksOf, linspace, priceGrid, validate, type Market, type Model, type Params } from "./models";
+import { MODELS, blackScholes, greeksOf, linspace, priceGrid, validate, type Market, type Model, type Params } from "./models";
 import { NumberField } from "./NumberField";
 import { Formula } from "./Formula";
 import { GreeksTable } from "./GreeksTable";
 import { Heatmap } from "./Heatmap";
 import { PriceCurve } from "./PriceCurve";
+import { PricePanel } from "./PricePanel";
+import { ChoiceField, ModelSwitch } from "./ModelSwitch";
 
 const LINKEDIN = "https://www.linkedin.com/in/ayomide-ogunbowale-91a6341ba/";
 const GITHUB = "https://github.com/Ayomide1x/BlackScholes";
@@ -46,11 +48,17 @@ function rangeError(r: Range, volLabel: string): string | null {
 }
 
 export function App() {
-  const model = MODELS[0];
+  const [modelId, setModelId] = useState(MODELS[0].id);
+  const model = MODELS.find((m) => m.id === modelId)!;
   const volSpec = model.params.find((p) => p.key === model.volParam)!;
+  const underlying = model.underlying ?? { label: "Spot price", symbol: "S" };
 
   const [form, setForm] = useState<Form>(START);
-  const [shown, setShown] = useState<Params>(() => defaults(model)); // display units
+  // Each model keeps its own inputs (display units), so switching back restores them.
+  const [shownByModel, setShownByModel] = useState<Record<string, Params>>(() =>
+    Object.fromEntries(MODELS.map((m) => [m.id, defaults(m)])),
+  );
+  const shown = shownByModel[model.id];
   // The heatmap range follows the inputs until someone edits it.
   const [customRange, setCustomRange] = useState<Range | null>(null);
   const [cells, setCells] = useState(10);
@@ -65,12 +73,19 @@ export function App() {
   );
   const error = validate(model, market, params);
   const prices = error ? null : model.price(market, params);
+  const reference =
+    prices && model.compareWithBlackScholes ? blackScholes.price(market, { vol: params[model.volParam] }) : null;
   const greeks = useMemo(() => (error ? null : greeksOf(model, market, params)), [error, model, market, params]);
 
   const range = customRange ?? rangeAround(form, shown[model.volParam]);
   const rError = rangeError(range, volSpec.label.toLowerCase());
   const set = (k: keyof Form) => (v: number) => setForm((f) => ({ ...f, [k]: v }));
-  const setParam = (k: string) => (v: number) => setShown((p) => ({ ...p, [k]: v }));
+  const setParam = (k: string) => (v: number) =>
+    setShownByModel((s) => ({ ...s, [model.id]: { ...s[model.id], [k]: v } }));
+  const switchModel = (id: string) => {
+    setModelId(id);
+    setCustomRange(null);
+  };
   const setRange = (k: keyof Range) => (v: number) => setCustomRange({ ...range, [k]: v });
 
   const heat = useMemo(() => {
@@ -86,7 +101,7 @@ export function App() {
   return (
     <>
       <header className="site">
-        <h1>Black–Scholes option pricer</h1>
+        <h1>Option pricer</h1>
         <p>
           Made by <a href={LINKEDIN}>Ayomide Ogunbowale</a>. <a href={GITHUB}>Read the source on GitHub</a>.
         </p>
@@ -95,10 +110,22 @@ export function App() {
       <main>
         <section className="top">
           <form className="inputs" onSubmit={(e) => e.preventDefault()} aria-label="Model inputs">
-            <NumberField symbol={<i>S</i>} label="Spot price" value={form.spot} onChange={set("spot")} min={1} max={500} step={0.5} />
+            <ModelSwitch models={MODELS} value={model.id} onChange={switchModel} />
+            <p className="model-about">{model.description}</p>
+            <NumberField symbol={<i>{underlying.symbol}</i>} label={underlying.label} value={form.spot} onChange={set("spot")} min={1} max={500} step={0.5} />
             <NumberField symbol={<i>K</i>} label="Strike price" value={form.strike} onChange={set("strike")} min={1} max={500} step={0.5} />
             <NumberField symbol={<i>T</i>} label="Time to maturity" value={form.time} onChange={set("time")} min={0.01} max={5} step={0.01} suffix="years" />
-            {model.params.map((p) => (
+            {model.params.map((p) =>
+              p.choices ? (
+                <ChoiceField
+                  key={p.key}
+                  label={p.label}
+                  name={`${model.id}-${p.key}`}
+                  choices={p.choices}
+                  value={shown[p.key]}
+                  onChange={setParam(p.key)}
+                />
+              ) : (
               <NumberField
                 key={p.key}
                 symbol={<i>{p.symbol}</i>}
@@ -110,16 +137,19 @@ export function App() {
                 step={p.step}
                 suffix={p.suffix}
               />
-            ))}
+              ),
+            )}
             <NumberField symbol={<i>r</i>} label="Risk-free rate" value={form.ratePct} onChange={set("ratePct")} min={-2} max={15} step={0.05} suffix="%" />
-            <button type="button" className="quiet" onClick={() => { setForm(START); setShown(defaults(model)); setCustomRange(null); }}>
+            <button type="button" className="quiet" onClick={() => { setForm(START); setShownByModel((s) => ({ ...s, [model.id]: defaults(model) })); setCustomRange(null); }}>
               Reset inputs
             </button>
           </form>
 
           <div className="results">
-            {prices ? (
+            {prices && model.id === blackScholes.id ? (
               <Formula market={market} vol={params.vol} prices={prices} />
+            ) : prices ? (
+              <PricePanel prices={prices} reference={reference} />
             ) : (
               <p className="error" role="alert">{error}</p>
             )}
@@ -135,13 +165,15 @@ export function App() {
             </section>
 
             <section aria-labelledby="heat-h">
-              <h2 id="heat-h">Prices across spot and {volSpec.label.toLowerCase()}</h2>
+              <h2 id="heat-h">
+                Prices across {underlying.label.toLowerCase()} and {volSpec.label.toLowerCase()}
+              </h2>
               <p className="lede">
-                Each cell reprices the option at one spot price and {volSpec.label.toLowerCase()}, keeping the other
+                Each cell reprices the option at one {underlying.label.toLowerCase()} and {volSpec.label.toLowerCase()}, keeping the other
                 inputs fixed. The outlined cell is closest to your inputs.
               </p>
               <div className="range">
-                <RangeBox label="Spot from" value={range.spotMin} onChange={setRange("spotMin")} />
+                <RangeBox label={`${underlying.label} from`} value={range.spotMin} onChange={setRange("spotMin")} />
                 <RangeBox label="to" value={range.spotMax} onChange={setRange("spotMax")} />
                 <RangeBox label={`${volSpec.label} from`} value={range.volMin} onChange={setRange("volMin")} suffix={volSpec.suffix} />
                 <RangeBox label="to" value={range.volMax} onChange={setRange("volMax")} suffix={volSpec.suffix} />
@@ -173,6 +205,7 @@ export function App() {
                       spots={heat.spots}
                       vols={heat.vols}
                       volSpec={volSpec}
+                      underlying={underlying}
                       current={{ spot: market.spot, vol: shown[model.volParam] }}
                     />
                   ))}
@@ -181,8 +214,8 @@ export function App() {
             </section>
 
             <section aria-labelledby="curve-h">
-              <h2 id="curve-h">Value across spot prices</h2>
-              <PriceCurve model={model} market={market} params={params} />
+              <h2 id="curve-h">Value across {underlying.label.toLowerCase()}s</h2>
+              <PriceCurve model={model} market={market} params={params} underlying={underlying} />
             </section>
           </>
         )}

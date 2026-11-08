@@ -1,0 +1,371 @@
+{
+  "black76": [
+    {
+      "market": {
+        "spot": 100,
+        "strike": 100,
+        "time": 1,
+        "rate": 0.05
+      },
+      "params": {
+        "vol": 0.2
+      },
+      "call": 7.57708214642728,
+      "put": 7.57708214642728
+    },
+    {
+      "market": {
+        "spot": 80,
+        "strike": 100,
+        "time": 0.5,
+        "rate": 0.03
+      },
+      "params": {
+        "vol": 0.35
+      },
+      "call": 2.173252053946339,
+      "put": 21.875490846007605
+    },
+    {
+      "market": {
+        "spot": 130,
+        "strike": 100,
+        "time": 2,
+        "rate": 0.08
+      },
+      "params": {
+        "vol": 0.15
+      },
+      "call": 26.631926404442694,
+      "put": 1.0676127354563554
+    }
+  ],
+  "merton": [
+    {
+      "market": {
+        "spot": 100,
+        "strike": 100,
+        "time": 1,
+        "rate": 0.05
+      },
+      "params": {
+        "vol": 0.2,
+        "lambda": 1,
+        "jumpMean": -0.1,
+        "jumpVol": 0.15
+      },
+      "call": 12.761288593628754,
+      "put": 7.884231043700154
+    },
+    {
+      "market": {
+        "spot": 100,
+        "strike": 100,
+        "time": 1,
+        "rate": 0.05
+      },
+      "params": {
+        "vol": 0.2,
+        "lambda": 3,
+        "jumpMean": 0.05,
+        "jumpVol": 0.3
+      },
+      "call": 24.50692848603857,
+      "put": 19.629870936109928
+    },
+    {
+      "market": {
+        "spot": 100,
+        "strike": 100,
+        "time": 1,
+        "rate": 0.05
+      },
+      "params": {
+        "vol": 0.2,
+        "lambda": 0,
+        "jumpMean": 0,
+        "jumpVol": 0
+      },
+      "call": 10.450583572185565,
+      "put": 5.573526022256971
+    },
+    {
+      "market": {
+        "spot": 80,
+        "strike": 100,
+        "time": 0.5,
+        "rate": 0.03
+      },
+      "params": {
+        "vol": 0.35,
+        "lambda": 1,
+        "jumpMean": -0.1,
+        "jumpVol": 0.15
+      },
+      "call": 3.002826472002981,
+      "put": 21.51402043230924
+    },
+    {
+      "market": {
+        "spot": 80,
+        "strike": 100,
+        "time": 0.5,
+        "rate": 0.03
+      },
+      "params": {
+        "vol": 0.35,
+        "lambda": 3,
+        "jumpMean": 0.05,
+        "jumpVol": 0.3
+      },
+      "call": 8.835163482666198,
+      "put": 27.34635744297245
+    },
+    {
+      "market": {
+        "spot": 80,
+        "strike": 100,
+        "time": 0.5,
+        "rate": 0.03
+      },
+      "params": {
+        "vol": 0.35,
+        "lambda": 0,
+        "jumpMean": 0,
+        "jumpVol": 0
+      },
+      "call": 2.4441096696777294,
+      "put": 20.955303629983987
+    },
+    {
+      "market": {
+        "spot": 130,
+        "strike": 100,
+        "time": 2,
+        "rate": 0.08
+      },
+      "params": {
+        "vol": 0.15,
+        "lambda": 1,
+        "jumpMean": -0.1,
+        "jumpVol": 0.15
+      },
+      "call": 46.74749973697905,
+      "put": 1.9618786336001872
+    },
+    {
+      "market": {
+        "spot": 130,
+        "strike": 100,
+        "time": 2,
+        "rate": 0.08
+      },
+      "params": {
+        "vol": 0.15,
+        "lambda": 3,
+        "jumpMean": 0.05,
+        "jumpVol": 0.3
+      },
+      "call": 59.501197860287625,
+      "put": 14.715576756908662
+    },
+    {
+      "market": {
+        "spot": 130,
+        "strike": 100,
+        "time": 2,
+        "rate": 0.08
+      },
+      "params": {
+        "vol": 0.15,
+        "lambda": 0,
+        "jumpMean": 0,
+        "jumpVol": 0
+      },
+      "call": 44.9789366827534,
+      "put": 0.1933155793745165
+    }
+  ],
+  "binomial": [
+    {
+      "market": {
+        "spot": 100,
+        "strike": 100,
+        "time": 1,
+        "rate": 0.05
+      },
+      "params": {
+        "vol": 0.2,
+        "steps": 50,
+        "american": 0
+      },
+      "call": 10.410691540732644,
+      "put": 5.533633990803824
+    },
+    {
+      "market": {
+        "spot": 100,
+        "strike": 100,
+        "time": 1,
+        "rate": 0.05
+      },
+      "params": {
+        "vol": 0.2,
+        "steps": 50,
+        "american": 1
+      },
+      "call": 10.410691540732644,
+      "put": 6.073727985724901
+    },
+    {
+      "market": {
+        "spot": 100,
+        "strike": 100,
+        "time": 1,
+        "rate": 0.05
+      },
+      "params": {
+        "vol": 0.2,
+        "steps": 200,
+        "american": 0
+      },
+      "call": 10.44059125985994,
+      "put": 5.563533709930569
+    },
+    {
+      "market": {
+        "spot": 100,
+        "strike": 100,
+        "time": 1,
+        "rate": 0.05
+      },
+      "params": {
+        "vol": 0.2,
+        "steps": 200,
+        "american": 1
+      },
+      "call": 10.44059125985994,
+      "put": 6.086382749916062
+    },
+    {
+      "market": {
+        "spot": 80,
+        "strike": 100,
+        "time": 0.5,
+        "rate": 0.03
+      },
+      "params": {
+        "vol": 0.35,
+        "steps": 50,
+        "american": 0
+      },
+      "call": 2.439349104191877,
+      "put": 20.950543064498316
+    },
+    {
+      "market": {
+        "spot": 80,
+        "strike": 100,
+        "time": 0.5,
+        "rate": 0.03
+      },
+      "params": {
+        "vol": 0.35,
+        "steps": 50,
+        "american": 1
+      },
+      "call": 2.439349104191877,
+      "put": 21.406689008806005
+    },
+    {
+      "market": {
+        "spot": 80,
+        "strike": 100,
+        "time": 0.5,
+        "rate": 0.03
+      },
+      "params": {
+        "vol": 0.35,
+        "steps": 200,
+        "american": 0
+      },
+      "call": 2.448248329580991,
+      "put": 20.959442289888685
+    },
+    {
+      "market": {
+        "spot": 80,
+        "strike": 100,
+        "time": 0.5,
+        "rate": 0.03
+      },
+      "params": {
+        "vol": 0.35,
+        "steps": 200,
+        "american": 1
+      },
+      "call": 2.448248329580991,
+      "put": 21.405282233455196
+    },
+    {
+      "market": {
+        "spot": 130,
+        "strike": 100,
+        "time": 2,
+        "rate": 0.08
+      },
+      "params": {
+        "vol": 0.15,
+        "steps": 50,
+        "american": 0
+      },
+      "call": 44.98084458085177,
+      "put": 0.19522347747245578
+    },
+    {
+      "market": {
+        "spot": 130,
+        "strike": 100,
+        "time": 2,
+        "rate": 0.08
+      },
+      "params": {
+        "vol": 0.15,
+        "steps": 50,
+        "american": 1
+      },
+      "call": 44.98084458085177,
+      "put": 0.2458100758388047
+    },
+    {
+      "market": {
+        "spot": 130,
+        "strike": 100,
+        "time": 2,
+        "rate": 0.08
+      },
+      "params": {
+        "vol": 0.15,
+        "steps": 200,
+        "american": 0
+      },
+      "call": 44.979130552782856,
+      "put": 0.19350944940518805
+    },
+    {
+      "market": {
+        "spot": 130,
+        "strike": 100,
+        "time": 2,
+        "rate": 0.08
+      },
+      "params": {
+        "vol": 0.15,
+        "steps": 200,
+        "american": 1
+      },
+      "call": 44.979130552782856,
+      "put": 0.24725361300328622
+    }
+  ]
+}

@@ -1,11 +1,16 @@
+import { black76 } from "./black76";
+import { binomial } from "./binomial";
 import { blackScholes } from "./blackScholes";
+import { merton } from "./merton";
 import type { Market, Model, OptionGreeks, Params, Prices } from "./types";
 
 export type { Market, Model, OptionGreeks, ParamSpec, Params, Prices } from "./types";
 export { linspace } from "./math";
 
 /** Every model the app offers, in menu order. */
-export const MODELS: Model[] = [blackScholes];
+export const MODELS: Model[] = [blackScholes, binomial, merton, black76];
+
+export { blackScholes };
 
 /** A message for the first invalid market input, or null. */
 export function validateMarket(m: Market): string | null {
@@ -17,7 +22,7 @@ export function validateMarket(m: Market): string | null {
 }
 
 export function validate(model: Model, market: Market, params: Params): string | null {
-  return validateMarket(market) ?? model.validate(params);
+  return validateMarket(market) ?? model.validate(params, market);
 }
 
 /**

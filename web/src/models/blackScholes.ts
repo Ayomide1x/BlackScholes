@@ -53,6 +53,7 @@ export function greeks(market: Market, vol: number): OptionGreeks {
 export const blackScholes: Model = {
   id: "black-scholes",
   name: "Black–Scholes",
+  description: "The classic closed-form model: the asset's log price follows a random walk with constant volatility.",
   params: [
     { key: "vol", label: "Volatility", symbol: "σ", default: 20, min: 1, max: 150, step: 0.5, scale: 0.01, suffix: "%" },
   ],

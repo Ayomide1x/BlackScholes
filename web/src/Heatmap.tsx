@@ -7,6 +7,7 @@ interface Props {
   spots: number[];
   vols: number[]; // the model's volatility input, in display units
   volSpec: ParamSpec;
+  underlying: { label: string; symbol: string };
   current: { spot: number; vol: number }; // vol in display units
 }
 
@@ -18,7 +19,7 @@ function nearest(values: number[], x: number) {
   return best;
 }
 
-export function Heatmap({ kind, grid, spots, vols, volSpec, current }: Props) {
+export function Heatmap({ kind, grid, spots, vols, volSpec, underlying, current }: Props) {
   const suffix = volSpec.suffix === "%" ? "%" : "";
   const flat = grid.flat();
   const lo = Math.min(...flat);
@@ -61,7 +62,7 @@ export function Heatmap({ kind, grid, spots, vols, volSpec, current }: Props) {
                       key={c}
                       className={[mix > 52 ? "dark" : "", r === markRow && c === markCol ? "mark" : ""].join(" ")}
                       style={{ "--mix": `${mix}%` } as React.CSSProperties}
-                      title={`Spot ${fmt(spots[c])}, ${volSpec.label.toLowerCase()} ${fmt(vols[r], 1)}${suffix}: ${fmt(v)}`}
+                      title={`${underlying.label} ${fmt(spots[c])}, ${volSpec.label.toLowerCase()} ${fmt(vols[r], 1)}${suffix}: ${fmt(v)}`}
                     >
                       {fmt(v)}
                     </td>
@@ -87,7 +88,7 @@ export function Heatmap({ kind, grid, spots, vols, volSpec, current }: Props) {
           Rows: {volSpec.label.toLowerCase()} <i>{volSpec.symbol}</i>
         </span>
         <span>
-          Columns: spot price <i>S</i>
+          Columns: {underlying.label.toLowerCase()} <i>{underlying.symbol}</i>
         </span>
       </p>
     </figure>

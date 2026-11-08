@@ -5,7 +5,7 @@ import { fmt, money } from "./format";
 const W = 720;
 const H = 300;
 const PAD = { top: 16, right: 16, bottom: 36, left: 52 };
-const POINTS = 121;
+const POINTS = 81;
 
 function niceTicks(lo: number, hi: number, count: number) {
   const raw = (hi - lo) / count;
@@ -17,8 +17,18 @@ function niceTicks(lo: number, hi: number, count: number) {
   return ticks.map((t) => ({ t, label: fmt(t, digits) }));
 }
 
-/** Option value today and payoff at expiry, across spot prices around the strike. */
-export function PriceCurve({ model, market: inputs, params }: { model: Model; market: Market; params: Params }) {
+/** Option value today and payoff at expiry, across underlying prices around the strike. */
+export function PriceCurve({
+  model,
+  market: inputs,
+  params,
+  underlying,
+}: {
+  model: Model;
+  market: Market;
+  params: Params;
+  underlying: { label: string };
+}) {
   const [hover, setHover] = useState<number | null>(null);
 
   const data = useMemo(() => {
@@ -52,7 +62,7 @@ export function PriceCurve({ model, market: inputs, params }: { model: Model; ma
       <svg
         viewBox={`0 0 ${W} ${H}`}
         role="img"
-        aria-label="Call and put value across spot prices, with payoff at expiry"
+        aria-label={`Call and put value across ${underlying.label.toLowerCase()}s, with payoff at expiry`}
         onPointerMove={(e) => {
           const box = e.currentTarget.getBoundingClientRect();
           const sx = ((e.clientX - box.left) / box.width) * W;
@@ -99,12 +109,12 @@ export function PriceCurve({ model, market: inputs, params }: { model: Model; ma
       <figcaption>
         {at ? (
           <>
-            At spot <b>{money(at.spot)}</b>: call <b className="call">{money(at.call)}</b>, put{" "}
+            At {underlying.label.toLowerCase()} <b>{money(at.spot)}</b>: call <b className="call">{money(at.call)}</b>, put{" "}
             <b className="put">{money(at.put)}</b>
           </>
         ) : (
           <>
-            Solid lines show value today; dashed lines show payoff at expiry. Dots mark your spot price. Point at the
+            Solid lines show value today; dashed lines show payoff at expiry. Dots mark your {underlying.label.toLowerCase()}. Point at the
             chart to read values.
           </>
         )}

@@ -17,6 +17,9 @@ export interface ParamSpec {
   step: number;
   scale: number; // display units × scale = model units (0.01 for a percentage)
   suffix?: string;
+  integer?: boolean; // whole numbers only, e.g. tree steps
+  /** A fixed set of values shown as a switch instead of a number box. */
+  choices?: { value: number; label: string }[];
 }
 
 /** Model-specific inputs, in model units, keyed by ParamSpec.key. */
@@ -43,13 +46,19 @@ export interface OptionGreeks {
 export interface Model {
   id: string;
   name: string;
+  /** One or two sentences on what the model adds, shown under the model switch. */
+  description: string;
+  /** What the first input is called, if not the spot price (Black-76 prices futures). */
+  underlying?: { label: string; symbol: string };
   params: ParamSpec[];
   /** The parameter that plays volatility: heatmap rows vary it and vega measures it. */
   volParam: string;
   /** What the model assumes, in a sentence for the page footer. */
   assumptions: string;
   /** A message for the first invalid parameter, or null. Market inputs are checked separately. */
-  validate(params: Params): string | null;
+  validate(params: Params, market: Market): string | null;
+  /** Show the price next to Black–Scholes with the same inputs, where the difference means something. */
+  compareWithBlackScholes?: boolean;
   price(market: Market, params: Params): Prices;
   /** Exact Greeks, when the model has them; otherwise they're estimated numerically. */
   greeks?(market: Market, params: Params): OptionGreeks;
