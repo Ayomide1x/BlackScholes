@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { blackScholes } from "./blackScholes";
-import { heston } from "./heston";
+import { fellerRatio, heston } from "./heston";
 import { impliedVol, smile } from "./impliedVol";
 import fixtures from "./heston-fixtures.json";
 
@@ -39,6 +39,12 @@ describe("Heston", () => {
     const bs = blackScholes.price(market, { vol: 0.2 });
     expect(h.call).toBeCloseTo(bs.call, 4);
     expect(h.put).toBeCloseTo(bs.put, 4);
+  });
+
+  it("computes the Feller ratio 2κσ̄² / ξ²", () => {
+    expect(fellerRatio(params)).toBeCloseTo(0.64, 12); // 2·2·0.04 / 0.25
+    expect(fellerRatio({ kappa: 2.5, longVol: 0.2, xi: 0.4 })).toBeCloseTo(1.25, 12);
+    expect(fellerRatio({ kappa: 1, longVol: 0.5, xi: Math.SQRT1_2 })).toBeCloseTo(1, 12); // the boundary
   });
 
   it("flags inputs that break the Feller condition, 2κσ̄² > ξ²", () => {

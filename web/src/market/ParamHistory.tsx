@@ -1,13 +1,30 @@
 import { niceTicks } from "../chart";
 import { fmt, signed } from "../format";
+import { fellerRatio } from "../models";
 import type { FitSummary } from "./useCalibration";
 
-const SERIES: { label: string; symbol: string; value: (f: FitSummary) => number; show: (v: number) => string }[] = [
+interface Series {
+  label: string;
+  symbol: string;
+  value: (f: FitSummary) => number;
+  show: (v: number) => string;
+  /** A level worth seeing on the chart, always kept in range. */
+  ref?: { at: number; label: string };
+}
+
+const SERIES: Series[] = [
   { label: "Current volatility", symbol: "σ₀", value: (f) => f.params.vol0 * 100, show: (v) => `${fmt(v, 1)}%` },
   { label: "Long-run volatility", symbol: "σ̄", value: (f) => f.params.longVol * 100, show: (v) => `${fmt(v, 1)}%` },
   { label: "Reversion speed", symbol: "κ", value: (f) => f.params.kappa, show: (v) => fmt(v) },
   { label: "Volatility of volatility", symbol: "ξ", value: (f) => f.params.xi * 100, show: (v) => `${fmt(v, 0)}%` },
   { label: "Price–volatility correlation", symbol: "ρ", value: (f) => f.params.rho, show: (v) => signed(v, 2) },
+  {
+    label: "Feller ratio",
+    symbol: "F",
+    value: (f) => fellerRatio(f.params),
+    show: (v) => fmt(v),
+    ref: { at: 1, label: "Feller holds above" },
+  },
   { label: "Fit error", symbol: "", value: (f) => f.rmseIv * 100, show: (v) => `${fmt(v)} pts` },
 ];
 
@@ -38,8 +55,8 @@ export function ParamHistory({ history }: { history: FitSummary[] }) {
     <div className="history">
       {SERIES.map((s) => {
         const values = history.map(s.value);
-        const lo = Math.min(...values);
-        const hi = Math.max(...values);
+        const lo = Math.min(...values, s.ref?.at ?? Infinity);
+        const hi = Math.max(...values, s.ref?.at ?? -Infinity);
         const pad = (hi - lo) * 0.12 || Math.abs(hi) * 0.05 || 1;
         const y = (v: number) => PAD.top + (1 - (v - lo + pad) / (hi - lo + 2 * pad)) * (H - PAD.top - PAD.bottom);
         const line = values.map((v, i) => `${i ? "L" : "M"}${x(t[i]).toFixed(1)},${y(v).toFixed(1)}`).join("");
@@ -66,6 +83,14 @@ export function ParamHistory({ history }: { history: FitSummary[] }) {
               <text className="tick" x={W - PAD.right} y={H - 6} textAnchor="end">
                 {short(history[history.length - 1].date)}
               </text>
+              {s.ref && (
+                <g className="ref">
+                  <line x1={PAD.left} x2={W - PAD.right} y1={y(s.ref.at)} y2={y(s.ref.at)} />
+                  <text x={W - PAD.right} y={y(s.ref.at)} dy="-0.4em" textAnchor="end">
+                    {s.ref.label}
+                  </text>
+                </g>
+              )}
               <path className="fit-line" d={line} />
               {values.map((v, i) => (
                 <circle key={i} cx={x(t[i])} cy={y(v)} r={history.length > 40 ? 1.5 : 2.5} className="history-dot">

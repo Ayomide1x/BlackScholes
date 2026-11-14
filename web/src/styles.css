@@ -885,6 +885,33 @@ sup {
   }
 }
 
+/* The Feller check: text plus colour, so it reads without the colour. */
+.badge {
+  display: inline-block;
+  padding: 0 0.45em;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+  vertical-align: 0.15em;
+  cursor: help;
+}
+
+.badge.holds {
+  color: var(--call);
+}
+
+.badge.fails {
+  color: var(--put);
+}
+
+.feller-row th .muted {
+  font-family: var(--math);
+  font-size: 0.9375rem;
+  margin-left: 0.25rem;
+}
+
 /* Fit history */
 
 .history {
@@ -914,6 +941,15 @@ sup {
 
 .history .history-dot {
   fill: var(--ink);
+}
+
+.history .ref line {
+  stroke: var(--put);
+  stroke-dasharray: 4 3;
+}
+
+.history .ref text {
+  fill: var(--put);
 }
 
 .history-h {

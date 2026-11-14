@@ -10,6 +10,13 @@ export interface HestonParams {
 }
 
 /**
+ * 2κσ̄² / ξ²: above 1 the Feller condition holds and variance stays strictly
+ * positive; at or below 1 it can touch zero.
+ */
+export const fellerRatio = (p: Pick<HestonParams, "kappa" | "longVol" | "xi">) =>
+  (2 * p.kappa * p.longVol ** 2) / p.xi ** 2;
+
+/**
  * Characteristic function of ln S_T, in the "little Heston trap" form
  * (Albrecher et al., 2007), which avoids the branch-cut jumps of Heston's
  * original formula at long maturities.
@@ -106,7 +113,7 @@ export const heston: Model = {
     return null;
   },
   note: (p) =>
-    2 * p.kappa * p.longVol ** 2 <= p.xi ** 2
+    fellerRatio(p as unknown as HestonParams) <= 1
       ? "Variance can touch zero with these inputs (2κσ̄² ≤ ξ², the Feller condition fails). Prices are still valid."
       : null,
   price: (m, p) => price(m, p as unknown as HestonParams),

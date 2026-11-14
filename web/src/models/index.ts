@@ -12,6 +12,7 @@ export type { ConvergencePoint, Estimate, Market, Model, OptionGreeks, ParamSpec
 export { linspace } from "./math";
 export { numericGreeks } from "./greeks";
 export { impliedVol, smile, type SmileCurve } from "./impliedVol";
+export { fellerRatio } from "./heston";
 
 /** Every model the app offers, in menu order. */
 export const MODELS: Model[] = [blackScholes, binomial, monteCarlo, heston, merton, black76];

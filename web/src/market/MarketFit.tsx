@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { niceTicks } from "../chart";
 import { fmt, signed } from "../format";
-import type { Params } from "../models";
+import { fellerRatio, type Params } from "../models";
 import { ParamHistory } from "./ParamHistory";
 import type { Calibration, CalibrationExpiry, CalibrationState, RunStatus } from "./useCalibration";
 
@@ -46,6 +46,7 @@ export function MarketFit({ state, onUse }: { state: CalibrationState; onUse: (i
     );
 
   const inputs = fittedInputs(fit);
+  const feller = fellerRatio(fit.params);
   // Only mention the last run when it's newer than the fit and didn't succeed.
   const newer = lastRun && lastRun.status !== "ok" && (lastRun.date ?? "") >= fit.date;
 
@@ -95,6 +96,24 @@ export function MarketFit({ state, onUse }: { state: CalibrationState; onUse: (i
               <th scope="row"><span className="sym">ρ</span> Price–volatility correlation</th>
               <td className="num">{signed(inputs.rho, 2)}</td>
             </tr>
+            <tr className="feller-row">
+              <th scope="row">
+                <span className="sym">F</span> Feller ratio <span className="muted">2κσ̄² / ξ²</span>
+              </th>
+              <td className="num">
+                <span
+                  className={`badge ${feller > 1 ? "holds" : "fails"}`}
+                  title={
+                    feller > 1
+                      ? "Above 1: the Feller condition holds, so variance stays strictly above zero."
+                      : "At or below 1: the Feller condition fails, so variance can touch zero."
+                  }
+                >
+                  {feller > 1 ? "holds" : "fails"}
+                </span>{" "}
+                {fmt(feller)}
+              </td>
+            </tr>
           </tbody>
         </table>
         <div className="fit-actions">
@@ -111,6 +130,13 @@ export function MarketFit({ state, onUse }: { state: CalibrationState; onUse: (i
           <p className="waiting" aria-live="polite">
             {used ? "Loaded into the Heston inputs above." : "Loads them into the Heston inputs above."}
           </p>
+          {feller <= 1 && (
+            <p className="model-note">
+              This fit breaks the Feller condition (2κσ̄² ≤ ξ²), so the model's variance can touch zero. Fits to index
+              options usually do, because only a high ξ produces their steep skew. The prices here are still valid;
+              a simulation of this model would need to handle variance at zero.
+            </p>
+          )}
           {fit.atBound.length > 0 && (
             <p className="model-note">
               {fit.atBound.map((n) => BOUND_NAMES[n] ?? n).join(" and ")} ended at the fit's limit. Heston can only
